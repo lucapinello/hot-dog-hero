@@ -1,0 +1,5 @@
+.testenv/
+.claude/
+v*.html
+.DS_Store
+*.log
