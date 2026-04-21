@@ -208,6 +208,7 @@
     /* Use dynamic viewport so the screen fits iOS Safari's visible area
        (address bar excluded when it hides on scroll). */
     height: 100dvh;
+    box-sizing: border-box;
     background: radial-gradient(circle at 50% 30%, #2a2a5a 0%, #0d0d22 100%);
     display: none;
     flex-direction: column; align-items: center; justify-content: flex-start;
@@ -445,21 +446,26 @@
      the app to the home screen. iPhone Safari can't enter real fullscreen
      for web apps, so this is the sanctioned path. */
   #ios-install-hint { display: none; }
+  /* When the iOS hint is showing, push menu content down so the pill doesn't
+     overlap the hot dog / title. */
+  body.ios-not-installed .screen.active {
+    padding-top: calc(max(8px, env(safe-area-inset-top, 8px)) + 40px);
+  }
   body.ios-not-installed:has(.screen.active) #ios-install-hint {
     display: flex;
     position: fixed;
     left: 50%;
-    top: max(10px, env(safe-area-inset-top, 10px));
+    top: max(6px, env(safe-area-inset-top, 6px));
     transform: translateX(-50%);
     z-index: 12;
     background: rgba(20, 20, 40, 0.92);
     color: #fff;
-    padding: 10px 14px;
+    padding: 6px 12px;
     border-radius: 999px;
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 600;
     gap: 6px; align-items: center;
-    box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
     white-space: nowrap;
     max-width: calc(100vw - 24px);
     font-family: 'Fredoka', system-ui, sans-serif;
