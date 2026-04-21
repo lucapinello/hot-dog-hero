@@ -5400,17 +5400,33 @@ function update(dt) {
 
   player.group.position.set(player.x, player.y, player.z);
 
-  // Pet mascot — follows behind and above with smooth lag + bobbing
+  // Pet mascot — follows behind and above the player, bobs like a mosquito,
+  // and keeps its eyes pointed at the player
   if (player.pet) {
-    const targetX = player.x - 1.6;
-    const targetY = player.y + 1.9 + Math.sin(world.time * 3) * 0.15;
-    const targetZ = player.z + 0.4;
-    player.pet.position.x += (targetX - player.pet.position.x) * Math.min(1, dt * 4);
-    player.pet.position.y += (targetY - player.pet.position.y) * Math.min(1, dt * 4);
-    player.pet.position.z += (targetZ - player.pet.position.z) * Math.min(1, dt * 4);
-    // Wiggle / look around
-    player.pet.rotation.y = Math.sin(world.time * 2) * 0.25;
-    player.pet.rotation.z = Math.sin(world.time * 4) * 0.12;
+    // Mosquito-style jitter — stacked sines at incommensurate frequencies
+    // make the motion feel organic rather than periodic
+    const tP = world.time;
+    const mosX = Math.sin(tP * 3.1) * 0.28 + Math.sin(tP * 1.7 + 1.3) * 0.18;
+    const mosY = Math.cos(tP * 2.3) * 0.22 + Math.sin(tP * 4.1 + 0.7) * 0.12;
+    const mosZ = Math.sin(tP * 2.8 + 2.0) * 0.22 + Math.cos(tP * 1.3) * 0.16;
+
+    const targetX = player.x - 1.6 + mosX;
+    const targetY = player.y + 1.9 + mosY;
+    const targetZ = player.z + 0.4 + mosZ;
+    // Slow follow (dt * 3 lag) — retains the lazy-trail feel while jitter handles liveliness
+    player.pet.position.x += (targetX - player.pet.position.x) * Math.min(1, dt * 3);
+    player.pet.position.y += (targetY - player.pet.position.y) * Math.min(1, dt * 3);
+    player.pet.position.z += (targetZ - player.pet.position.z) * Math.min(1, dt * 3);
+
+    // Aim eyes at the player's head — local +Z on the pet's face points
+    // toward the target after rotating by atan2(dx, dz) around Y
+    const pdx = player.x - player.pet.position.x;
+    const pdy = (player.y + 1.4) - player.pet.position.y;
+    const pdz = player.z - player.pet.position.z;
+    const horiz = Math.hypot(pdx, pdz);
+    player.pet.rotation.y = Math.atan2(pdx, pdz);
+    player.pet.rotation.x = -Math.atan2(pdy, horiz) * 0.7;  // gentle pitch toward player
+    player.pet.rotation.z = Math.sin(tP * 4) * 0.1;         // subtle roll wobble
   }
 
   // Ground shadow tracks player; shrinks + fades as they jump higher
