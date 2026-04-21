@@ -4938,11 +4938,16 @@ function showPopup(text, color = "#ffcc00", worldX = null, worldY = null) {
   setTimeout(() => el.remove(), 1000);
 }
 
-function addScore(base, worldX, worldY) {
+function addScore(base, worldX, worldY, opts = {}) {
   const gained = Math.round(base * player.combo);
   player.score += gained;
-  const label = player.combo > 1 ? `+${gained} ×${player.combo}` : `+${gained}`;
-  showPopup(label, "#ffcc00", worldX, worldY);
+  // By default show the small "+N ×combo" popup. Callers that spam the
+  // screen (every hotdog collected) pass { silent: true } to suppress it;
+  // combo milestones below still fire their own celebration.
+  if (!opts.silent) {
+    const label = player.combo > 1 ? `+${gained} ×${player.combo}` : `+${gained}`;
+    showPopup(label, "#ffcc00", worldX, worldY);
+  }
   player.combo = Math.min(10, player.combo + 1);
   player.comboTimer = 2.0;
 
@@ -5429,6 +5434,7 @@ function update(dt) {
     if (dxC * dxC + dyC * dyC < hitRadiusSq) {
       c.visible = false;
       let basePts = 10;
+      let silent = true;   // small collectibles don't spam "+N" popups
       if (c.userData.type === "hotdog") {
         player.hotdogs++; basePts = 10;
         if (player.hotdogs % 10 === 0 && player.hearts < 3) {
@@ -5448,20 +5454,41 @@ function update(dt) {
         burstConfetti(c.position.x, c.position.y, c.position.z, 10, [0xffdd33, 0xf5c23e, 0xffffff]);
       } else if (c.userData.type === "bighotdog") {
         player.hotdogs += 100; basePts = 500;
-        // Huge heart refill on mega-dog
+        silent = false;  // rare, worth celebrating on-screen
         if (player.hearts < 3) { player.hearts = 3; flashHeal(); }
         Audio.sfxWin();
         showPopup("+100 🌭 MEGA!", "#ffdd00", c.position.x, c.position.y);
-        // Rainbow explosion!
         burstConfetti(c.position.x, c.position.y, c.position.z, 40, RAINBOW, 1.4);
       } else if (c.userData.type === "rainbowdog") {
         player.hotdogs += 5; basePts = 200;
+        silent = false;
         Audio.sfxWin();
         showPopup("+200 ✨ RAINBOW!", "#ff66cc", c.position.x, c.position.y + 0.3);
         burstConfetti(c.position.x, c.position.y + 0.3, c.position.z, 28, RAINBOW, 1.1);
         spawnShockwave(c.position.x, c.position.y + 0.3, 0, 0xff66cc, 6, 0.45);
       }
-      addScore(basePts, c.position.x, c.position.y);
+      addScore(basePts, c.position.x, c.position.y, { silent });
+
+      // Rapid-collect streak: if the player grabs several collectibles in
+      // quick succession, reward with a bonus popup (only fires on hits of
+      // 4+, so it rarely overlaps other popups). Resets if the gap grows.
+      const nowT = world ? world.time : 0;
+      if (nowT - (player.streakAt || -99) < 1.2) {
+        player.streak = (player.streak || 1) + 1;
+      } else {
+        player.streak = 1;
+      }
+      player.streakAt = nowT;
+      if (player.streak === 4 || player.streak === 8 || player.streak === 12) {
+        const bonus = player.streak * 25;
+        player.score += bonus;
+        const label = player.streak >= 12 ? `UNSTOPPABLE! +${bonus}`
+                    : player.streak >= 8  ? `ON FIRE! +${bonus}`
+                    :                        `STREAK! +${bonus}`;
+        showPopup(label, "#ffdd33", player.x, player.y + 1.8);
+        burstConfetti(player.x, player.y + 1.5, 0, 14, [0xffdd33, 0xff8833, 0xff3355, 0xffffff], 1.0);
+        if (Audio.sfxCombo) Audio.sfxCombo(6);
+      }
     }
   }
 
