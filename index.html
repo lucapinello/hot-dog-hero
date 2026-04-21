@@ -201,11 +201,17 @@
     position: fixed; inset: 0;
     background: radial-gradient(circle at 50% 30%, #2a2a5a 0%, #0d0d22 100%);
     display: none;
-    flex-direction: column; align-items: center; justify-content: center;
-    color: #fff; text-align: center; padding: 20px;
+    flex-direction: column; align-items: center; justify-content: flex-start;
+    color: #fff; text-align: center;
+    padding: max(24px, env(safe-area-inset-top, 24px)) 20px max(24px, env(safe-area-inset-bottom, 24px));
     z-index: 10;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
   .screen.active { display: flex; }
+  /* Center vertically when content fits, scroll when it doesn't */
+  .screen > * { flex-shrink: 0; }
+  .screen::before, .screen::after { content: ""; flex: 1 1 auto; min-height: 0; }
   .title {
     font-size: 64px; font-weight: bold; margin: 0 0 10px;
     text-shadow: 0 4px 10px rgba(0,0,0,0.6);
@@ -298,6 +304,37 @@
   button.go:hover { transform: translateY(-2px); }
   button.go:active { transform: translateY(4px); box-shadow: 0 2px 0 #a88700; }
 
+  /* Short-viewport tweaks (landscape phones) — pack tighter so everything fits.
+     These sit AFTER the base rules so they actually win the cascade. */
+  @media (max-height: 560px) {
+    .splash-dog   { font-size: clamp(44px, 7vh, 80px); margin-bottom: -4px; }
+    .splash-title { font-size: clamp(36px, 10vh, 72px); letter-spacing: 1px; }
+    .subtitle     { font-size: 15px; margin-bottom: 10px; }
+    .title        { font-size: clamp(32px, 8vh, 52px); margin-bottom: 6px; }
+    .card         { width: 120px; min-height: 150px; padding: 10px; }
+    .card .portrait { width: 88px; height: 112px; margin-bottom: 2px; }
+    .card h3      { font-size: 15px; margin: 4px 0; }
+    .card .emoji  { font-size: 42px; }
+    button.go     { font-size: 17px; padding: 9px 22px; margin-top: 10px; }
+    .hint         { font-size: 12px; margin-top: 8px; }
+    .cards        { gap: 12px; flex-wrap: nowrap; }
+    .screen       { padding: 14px 16px; }
+  }
+  /* Extra-short (iPhone SE / 13 mini landscape) — go even more compact */
+  @media (max-height: 430px) {
+    .splash-dog   { font-size: 38px; margin-bottom: -2px; }
+    .splash-title { font-size: 36px; letter-spacing: 0.5px; }
+    .subtitle     { font-size: 13px; margin-bottom: 6px; }
+    .title        { font-size: 30px; }
+    .card         { width: 108px; min-height: 124px; padding: 8px; }
+    .card .portrait { width: 76px; height: 94px; margin-bottom: 0; }
+    .card h3      { font-size: 14px; margin: 2px 0; }
+    button.go     { font-size: 15px; padding: 7px 18px; margin-top: 8px; }
+    .hint         { font-size: 11px; margin-top: 6px; }
+    .cards        { gap: 10px; flex-wrap: nowrap; }
+    .screen       { padding: 10px 14px; }
+  }
+
   .pause-overlay, .result-overlay {
     position: fixed; inset: 0;
     background: rgba(0,0,0,0.55);
@@ -364,8 +401,10 @@
     text-align: center; padding: 24px;
     font-family: 'Fredoka', system-ui, sans-serif;
   }
+  /* Rotate hint only shows during gameplay (not on menu screens) so the
+     player can still navigate the menus in portrait if they want. */
   @media (pointer: coarse) and (hover: none) and (orientation: portrait) {
-    #rotate-hint { display: flex; }
+    body:not(:has(.screen.active)) #rotate-hint { display: flex; }
   }
   .rotate-icon { font-size: 96px; animation: rotateHintSpin 2.2s ease-in-out infinite; }
   @keyframes rotateHintSpin {
@@ -969,7 +1008,21 @@ function buildLevelCards() {
     wrap.appendChild(card);
   });
 }
-$("level-play").addEventListener("click", () => startLevel(chosenLevel));
+function tryGoFullscreen() {
+  const el = document.documentElement;
+  const req = el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen || el.msRequestFullscreen;
+  if (req) {
+    try { const p = req.call(el); if (p && p.catch) p.catch(() => {}); } catch (_) {}
+  }
+  // Best-effort landscape lock (supported on Android Chrome, ignored elsewhere)
+  if (screen.orientation && screen.orientation.lock) {
+    screen.orientation.lock("landscape").catch(() => {});
+  }
+}
+$("level-play").addEventListener("click", () => {
+  tryGoFullscreen();
+  startLevel(chosenLevel);
+});
 
 function showLevelSelect() {
   screenChar.classList.remove("active");
