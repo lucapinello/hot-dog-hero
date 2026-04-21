@@ -968,54 +968,60 @@ const NOTES = {
 };
 
 const SONGS = {
+  // Street — fast C-major skipping melody with plenty of notes. Happy and punchy.
   upbeat: {
-    bpm: 130,
+    bpm: 148,
     melody: [
-      NOTES.C5, null, NOTES.E5, null, NOTES.G5, null, NOTES.E5, null,
-      NOTES.F5, null, NOTES.A5, null, NOTES.G5, null, NOTES.E5, null,
+      NOTES.C5, NOTES.E5, NOTES.G5, NOTES.C6, NOTES.G5, NOTES.E5, NOTES.G5, NOTES.A5,
+      NOTES.F5, NOTES.A5, NOTES.C6, NOTES.A5, NOTES.G5, NOTES.E5, NOTES.C5, NOTES.E5,
     ],
     bass: [NOTES.C3, NOTES.C3, NOTES.G3, NOTES.G3, NOTES.F3, NOTES.F3, NOTES.G3, NOTES.G3],
     pattern: ["k", "h", "s", "h", "k", "h", "s", "h", "k", "h", "s", "h", "k", "h", "s", "h"],
     melodyWave: "triangle", bassWave: "square",
   },
+  // Park — A-major bright bouncy melody (upgraded from sparse minor-ish chill).
+  // Still relaxed-ish but with much more movement and no empty beats.
   chill: {
-    bpm: 110,
+    bpm: 128,
     melody: [
-      NOTES.E5, null, NOTES.G5, null, NOTES.B5, null, NOTES.A5, null,
-      NOTES.G5, null, NOTES.E5, null, NOTES.D5, null, NOTES.E5, null,
+      NOTES.E5, NOTES.A5, NOTES.C6, NOTES.A5, NOTES.E5, NOTES.A5, NOTES.C6, NOTES.E5,
+      NOTES.D5, NOTES.F5, NOTES.A5, NOTES.F5, NOTES.C5, NOTES.E5, NOTES.G5, NOTES.E5,
     ],
-    bass: [NOTES.A3, null, NOTES.E3, null, NOTES.F3, null, NOTES.G3, null],
-    pattern: ["k", null, "h", null, "s", null, "h", null, "k", null, "h", null, "s", null, "h", null],
-    melodyWave: "sine", bassWave: "triangle",
+    bass: [NOTES.A3, NOTES.A3, NOTES.E3, NOTES.E3, NOTES.D3, NOTES.D3, NOTES.E3, NOTES.E3],
+    pattern: ["k", "h", "s", "h", "k", "h", "s", "h", "k", "h", "s", "h", "k", "h", "s", "h"],
+    melodyWave: "triangle", bassWave: "triangle",
   },
+  // Beach — major-key surf arpeggio. Bright and summery.
   surf: {
+    bpm: 154,
+    melody: [
+      NOTES.C5, NOTES.E5, NOTES.G5, NOTES.C6, NOTES.A5, NOTES.G5, NOTES.E5, NOTES.C5,
+      NOTES.F5, NOTES.A5, NOTES.C6, NOTES.F5, NOTES.G5, NOTES.B4, NOTES.D5, NOTES.G5,
+    ],
+    bass: [NOTES.C3, NOTES.C3, NOTES.A3, NOTES.A3, NOTES.F3, NOTES.F3, NOTES.G3, NOTES.G3],
+    pattern: ["k", "h", "s", "h", "k", "h", "s", "h", "k", "h", "s", "h", "k", "h", "s", "h"],
+    melodyWave: "triangle", bassWave: "square",
+  },
+  // City — major-key energetic synth (replaces the minor-feel version)
+  city: {
     bpm: 140,
     melody: [
-      NOTES.A4, NOTES.C5, NOTES.E5, NOTES.A5, NOTES.G5, NOTES.E5, NOTES.C5, NOTES.A4,
-      NOTES.G4, NOTES.B4, NOTES.D5, NOTES.G5, NOTES.F5, NOTES.D5, NOTES.B4, NOTES.G4,
+      NOTES.F5, NOTES.A5, NOTES.C6, NOTES.A5, NOTES.G5, NOTES.E5, NOTES.G5, NOTES.A5,
+      NOTES.F5, NOTES.A5, NOTES.C6, NOTES.D5, NOTES.G5, NOTES.E5, NOTES.C5, NOTES.E5,
     ],
-    bass: [NOTES.A3, NOTES.A3, NOTES.E3, NOTES.E3, NOTES.G3, NOTES.G3, NOTES.D3, NOTES.D3],
-    pattern: ["k", "h", "h", "s", "k", "h", "h", "s", "k", "h", "h", "s", "k", "h", "h", "s"],
-    melodyWave: "sawtooth", bassWave: "square",
+    bass: [NOTES.F3, NOTES.F3, NOTES.C3, NOTES.C3, NOTES.G3, NOTES.G3, NOTES.C3, NOTES.C3],
+    pattern: ["k", "h", "s", "h", "k", "h", "s", "h", "k", "h", "s", "h", "k", "h", "s", "h"],
+    melodyWave: "square", bassWave: "square",
   },
-  city: {
-    bpm: 120,
-    melody: [
-      NOTES.D5, null, NOTES.F5, null, NOTES.A5, null, NOTES.F5, null,
-      NOTES.E5, null, NOTES.G5, null, NOTES.B5, null, NOTES.G5, null,
-    ],
-    bass: [NOTES.D3, NOTES.A3, NOTES.D3, NOTES.A3, NOTES.G3, NOTES.D3, NOTES.G3, NOTES.D3],
-    pattern: ["k", "h", "s", "h", "k", "k", "s", "h", "k", "h", "s", "h", "k", "k", "s", "h"],
-    melodyWave: "square", bassWave: "sawtooth",
-  },
+  // Airport — fast triumphant fanfare
   airport: {
-    bpm: 134,
+    bpm: 156,
     melody: [
-      NOTES.F5, NOTES.A5, NOTES.C6, NOTES.A5, NOTES.G5, NOTES.E5, NOTES.C5, null,
-      NOTES.E5, NOTES.G5, NOTES.B5, NOTES.G5, NOTES.F5, NOTES.D5, NOTES.B4, null,
+      NOTES.F5, NOTES.A5, NOTES.C6, NOTES.A5, NOTES.F5, NOTES.A5, NOTES.C6, NOTES.A5,
+      NOTES.G5, NOTES.B4, NOTES.D5, NOTES.G5, NOTES.C5, NOTES.E5, NOTES.G5, NOTES.C6,
     ],
-    bass: [NOTES.F3, NOTES.F3, NOTES.C3, NOTES.C3, NOTES.G3, NOTES.G3, NOTES.D3, NOTES.D3],
-    pattern: ["k", "h", "s", "h", "k", "h", "s", "h", "k", "h", "s", "h", "k", "k", "s", "h"],
+    bass: [NOTES.F3, NOTES.F3, NOTES.C3, NOTES.C3, NOTES.G3, NOTES.G3, NOTES.C3, NOTES.C3],
+    pattern: ["k", "h", "s", "h", "k", "h", "s", "h", "k", "h", "s", "h", "k", "h", "s", "h"],
     melodyWave: "triangle", bassWave: "square",
   },
 };
@@ -3807,9 +3813,12 @@ function buildEnvironment(lvl) {
   for (let i = 0; i < decorCount; i++) {
     const x = 5 + i * (lvl.length / decorCount) + (Math.random() - 0.5) * 6;
     const { dec, near } = decorFn();
-    const z = near
-      ? -4.5 - Math.random() * 3.5       // close: -4.5 to -8 (behind play plane, visible)
-      : -10 - Math.random() * 18;        // far: -10 to -28
+    // Beach: everything must sit on the sand, never in the sea (z < -9 is water)
+    const z = lvl.decor === "beach"
+      ? -4.5 - Math.random() * 4.0       // beach: strictly on the sand strip
+      : near
+        ? -4.5 - Math.random() * 3.5     // close: -4.5 to -8 (behind play plane, visible)
+        : -10 - Math.random() * 18;      // far: -10 to -28
     dec.position.set(x, 0, z);
     dec.rotation.y = (Math.random() - 0.5) * 0.4;
     env.add(dec);
@@ -4459,26 +4468,26 @@ function buildEnvironment(lvl) {
   env.add(ambientGroup);
   env.userData.ambientGroup = ambientGroup;
 
-  // Far mountains (always background)
+  // Far mountains (background).
+  // Beach is special: the sea plane spans z = -10 to -90, so mountains must
+  // sit BEHIND the water or they'll look like sand islands poking out.
+  const isBeach = lvl.decor === "beach";
   const mountainMat = mat(0x6a80a8, { rough: 1 });
+  const nearMtnZ = isBeach ? -100 : -50;
   for (let i = 0; i < 22; i++) {
     const m = new THREE.Mesh(new THREE.ConeGeometry(4 + Math.random() * 3, 6 + Math.random() * 5, 6), mountainMat);
-    m.position.set(Math.random() * lvl.length, 3, -50 - Math.random() * 15);
+    m.position.set(Math.random() * lvl.length, 3, nearMtnZ - Math.random() * 15);
     env.add(m);
   }
 
   // A second-layer of further, darker mountains
   const mountain2Mat = mat(0x4a5f8a, { rough: 1 });
+  const farMtnZ = isBeach ? -125 : -75;
   for (let i = 0; i < 20; i++) {
     const m = new THREE.Mesh(new THREE.ConeGeometry(6 + Math.random() * 4, 9 + Math.random() * 5, 5), mountain2Mat);
-    m.position.set(Math.random() * lvl.length, 4, -75 - Math.random() * 15);
+    m.position.set(Math.random() * lvl.length, 4, farMtnZ - Math.random() * 15);
     env.add(m);
   }
-
-  // Sun disc in sky (behind mountains)
-  const sunDisc = new THREE.Mesh(new THREE.CircleGeometry(5, 32), mat(0xffeeaa, { emissive: 0xffeeaa, emissiveIntensity: 0.9 }));
-  sunDisc.position.set(lvl.length * 0.7, 25, -90);
-  env.add(sunDisc);
 
   return env;
 }
