@@ -440,11 +440,12 @@
   .rotate-text  { font-size: 26px; font-weight: 700; margin-top: 18px; }
   .rotate-sub   { font-size: 16px; margin-top: 8px; color: #bbb; }
 
-  /* iOS "Add to Home Screen" hint — visible only when JS marks body with
-     `ios-not-installed`. iPhone Safari can't enter real fullscreen for web
-     apps, so this is the sanctioned path to a full-bleed experience. */
+  /* iOS "Add to Home Screen" hint — shown only on the splash/menu screens
+     (not during gameplay) for iPhone Safari users that haven't installed
+     the app to the home screen. iPhone Safari can't enter real fullscreen
+     for web apps, so this is the sanctioned path. */
   #ios-install-hint { display: none; }
-  body.ios-not-installed #ios-install-hint {
+  body.ios-not-installed:has(.screen.active) #ios-install-hint {
     display: flex;
     position: fixed;
     left: 50%;
