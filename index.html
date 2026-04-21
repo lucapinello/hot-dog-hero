@@ -105,17 +105,6 @@
     50% { transform: scale(1.08); box-shadow: 0 0 18px rgba(255,68,68,0.8); }
   }
 
-  #hud .audio-toggle {
-    position: absolute;
-    top: 16px; right: 50%;
-    transform: translateX(210px);
-    background: rgba(0,0,0,0.5);
-    padding: 6px 10px;
-    border-radius: 10px;
-    font-size: 14px;
-    pointer-events: auto;
-    cursor: pointer;
-  }
 
   /* Floating score popups */
   .popup {
@@ -543,7 +532,6 @@
     <div class="level-name" id="level-name">Street</div>
   </div>
   <div class="boost" id="boost"><span id="boost-icon">🏍️</span><div class="bar"><div id="boost-bar"></div></div></div>
-  <div class="audio-toggle" id="audio-toggle">🔊 Sound ON</div>
 </div>
 
 <div class="pause-overlay" id="pause-overlay">
@@ -955,7 +943,6 @@ const Audio = {
     this.enabled = !this.enabled;
     if (!this.enabled) this.stopMusic();
     else if (this.currentSong) this.playSong(this.currentSong);
-    $("audio-toggle").textContent = this.enabled ? "🔊 Sound ON" : "🔇 Sound OFF";
   },
 };
 
@@ -1120,8 +1107,6 @@ function showCharSelect() {
   hud.style.display = "none";
   Audio.stopMusic();
 }
-
-$("audio-toggle").addEventListener("click", () => Audio.toggle());
 
 // ---------- Input ----------
 const keys = {};
@@ -4948,15 +4933,19 @@ function addScore(base, worldX, worldY, opts = {}) {
     const label = player.combo > 1 ? `+${gained} ×${player.combo}` : `+${gained}`;
     showPopup(label, "#ffcc00", worldX, worldY);
   }
+  const prevCombo = player.combo;
   player.combo = Math.min(10, player.combo + 1);
   player.comboTimer = 2.0;
 
-  // Combo milestone celebrations
-  if (player.combo === 5 || player.combo === 10) {
+  // Combo milestone celebrations — only fire on the TRANSITION, not while
+  // the combo is stuck at the ×10 cap (which would re-fire every pickup).
+  const hitFive = prevCombo < 5 && player.combo === 5;
+  const hitTen  = prevCombo < 10 && player.combo === 10;
+  if (hitFive || hitTen) {
     const wx = worldX != null ? worldX : player.x;
     const wy = worldY != null ? worldY : player.y + 1.5;
-    burstConfetti(wx, wy, 0, player.combo === 10 ? 36 : 22, RAINBOW, 1.1);
-    showPopup(player.combo === 10 ? "MEGA COMBO!" : "COMBO!", "#ffaaff", wx, wy + 1.2);
+    burstConfetti(wx, wy, 0, hitTen ? 36 : 22, RAINBOW, 1.1);
+    showPopup(hitTen ? "MEGA COMBO!" : "COMBO!", "#ffaaff", wx, wy + 1.2);
     if (Audio.sfxCombo) Audio.sfxCombo(player.combo);
   }
 }
