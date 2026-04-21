@@ -1091,18 +1091,16 @@ if (isIPhone && !isStandalone) {
 }
 
 function tryGoFullscreen() {
-  // iPhone Safari rejects requestFullscreen for non-<video> elements.
-  // Trying on the canvas first is slightly more compatible, then fallback.
-  const targets = [document.querySelector("canvas"), document.getElementById("container"), document.documentElement].filter(Boolean);
-  for (const el of targets) {
-    const req = el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen || el.msRequestFullscreen;
-    if (req) {
-      try {
-        const p = req.call(el);
-        if (p && p.catch) p.catch(() => {});
-        break; // only try the first element that has the API
-      } catch (_) {}
-    }
+  // Fullscreen the WHOLE document — if we fullscreened just the canvas
+  // the HUD (hearts, score, items) would be hidden because it lives
+  // outside the canvas element.
+  const el = document.documentElement;
+  const req = el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen || el.msRequestFullscreen;
+  if (req) {
+    try {
+      const p = req.call(el);
+      if (p && p.catch) p.catch(() => {});
+    } catch (_) {}
   }
   // Best-effort landscape lock (supported on Android Chrome, ignored elsewhere)
   if (screen.orientation && screen.orientation.lock) {
@@ -1272,9 +1270,9 @@ function buildCharacter(which) {
   const accMat = mat(P.accessory, { rough: 0.5 });
 
   // --- Torso ---
-  // Girl gets a slightly more tapered silhouette; boy stays boxier
+  // Girl has a noticeably slimmer torso; boy stays boxier
   const bodyGeo = which === "girl"
-    ? new THREE.CapsuleGeometry(0.34, 0.55, 12, 24)
+    ? new THREE.CapsuleGeometry(0.26, 0.58, 12, 24)
     : new THREE.CapsuleGeometry(0.38, 0.55, 12, 24);
   const body = new THREE.Mesh(bodyGeo, shirtMat);
   body.position.set(0, 1.15, 0);
@@ -1282,7 +1280,7 @@ function buildCharacter(which) {
   group.add(body);
 
   // Chest stripe (contrasting band)
-  const stripeR = which === "girl" ? 0.35 : 0.39;
+  const stripeR = which === "girl" ? 0.27 : 0.39;
   const stripe = new THREE.Mesh(new THREE.CylinderGeometry(stripeR, stripeR, 0.14, 24, 1, true), accentMat);
   stripe.position.set(0, 1.08, 0);
   group.add(stripe);
@@ -1333,7 +1331,7 @@ function buildCharacter(which) {
     const skirtMat = mat(0xff66cc, { rough: 0.55 });
     const skirtTrimMat = mat(0xffffff, { rough: 0.5 });
     // CylinderGeometry(radiusTop, radiusBottom, height) — narrow waist → wider hem
-    const skirt = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.48, 0.3, 28, 1, false), skirtMat);
+    const skirt = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.46, 0.3, 28, 1, false), skirtMat);
     skirt.position.set(0, 0.68, 0);
     group.add(skirt);
     // Hem trim (thin white band around the bottom edge)
@@ -1452,11 +1450,8 @@ function buildCharacter(which) {
       headGroup.add(bowCenter);
     }
   } else {
-    // Boy: small hair tuft at back only (cap covers the rest so no dark strip shows on forehead)
-    const backTuft = new THREE.Mesh(new THREE.SphereGeometry(0.14, 16, 12), hairMat);
-    backTuft.scale.set(0.7, 0.7, 1.0);
-    backTuft.position.set(-0.36, -0.02, 0);
-    headGroup.add(backTuft);
+    // Boy — the cap covers the crown; no back hair tuft (it poked out as a
+    // weird lump behind the head)
 
     // Cap crown — half-sphere sitting on head, above brow line so face is fully visible
     const capBase = new THREE.Mesh(
@@ -1540,25 +1535,31 @@ function buildCharacter(which) {
   // --- Arms ---
   function makeArm(zSide) {
     const g2 = new THREE.Group();
-    g2.position.set(0, 1.48, zSide * 0.44);
+    // Girl's arms hug the body closer and are a bit thinner
+    const armZ = which === "girl" ? 0.33 : 0.44;
+    const armR = which === "girl" ? 0.082 : 0.1;
+    g2.position.set(0, 1.48, zSide * armZ);
 
-    const arm = new THREE.Mesh(new THREE.CapsuleGeometry(0.1, 0.48, 8, 16), skinMat);
+    const arm = new THREE.Mesh(new THREE.CapsuleGeometry(armR, 0.48, 8, 16), skinMat);
     arm.position.set(0, -0.3, 0);
     arm.castShadow = true;
     g2.add(arm);
 
     // Sleeve
-    const sleeve = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.12, 0.18, 16), shirtMat);
+    const sleeveR = which === "girl" ? 0.115 : 0.14;
+    const sleeve = new THREE.Mesh(new THREE.CylinderGeometry(sleeveR, sleeveR - 0.02, 0.18, 16), shirtMat);
     sleeve.position.set(0, -0.08, 0);
     g2.add(sleeve);
     // Sleeve trim
-    const sleeveTrim = new THREE.Mesh(new THREE.TorusGeometry(0.12, 0.02, 8, 16), accentMat);
+    const trimR = which === "girl" ? 0.1 : 0.12;
+    const sleeveTrim = new THREE.Mesh(new THREE.TorusGeometry(trimR, 0.02, 8, 16), accentMat);
     sleeveTrim.position.set(0, -0.17, 0);
     sleeveTrim.rotation.x = Math.PI / 2;
     g2.add(sleeveTrim);
 
     // Wristband
-    const wrist = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.1, 16), wristMat);
+    const wristR = which === "girl" ? 0.1 : 0.12;
+    const wrist = new THREE.Mesh(new THREE.CylinderGeometry(wristR, wristR, 0.1, 16), wristMat);
     wrist.position.set(0, -0.55, 0);
     g2.add(wrist);
 
