@@ -4510,37 +4510,61 @@ function buildEnvironment(lvl) {
         : lvl.decor === "airport"
           ? [0xff3355, 0xffffff, 0x3377cc, 0xffdd33, 0xffffff]
           : [0xff4466, 0xff8844, 0xffdd33, 0x44cc77, 0x3388ee, 0xaa44dd];
-    const stringSpan = 40;           // every N units along the level
+    const ropeMat = mat(0x3a2a1a, { rough: 0.85 });
+    const stringSpan = 40;
     const totalStrings = Math.max(4, Math.floor(lvl.length / stringSpan));
     for (let s = 0; s < totalStrings; s++) {
       const xCenter = 10 + s * stringSpan;
       const spanX = 22, count = 12;
+      // First compute every point along the catenary so we can lay the rope
+      // segment-by-segment AND hang flags from those exact points.
+      const pts = [];
       for (let i = 0; i < count; i++) {
         const t = i / (count - 1);
         const x = xCenter - spanX / 2 + t * spanX;
-        // Gentle catenary sag between two posts
         const y = 8.5 - Math.sin(t * Math.PI) * 2.0;
+        pts.push({ x, y });
+      }
+      // Rope — one thin cylinder per segment, rotated to follow the sag
+      for (let i = 0; i < pts.length - 1; i++) {
+        const a = pts[i], b = pts[i + 1];
+        const dx = b.x - a.x, dy = b.y - a.y;
+        const len = Math.hypot(dx, dy);
+        const rope = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.04, 0.04, len, 6),
+          ropeMat
+        );
+        rope.position.set((a.x + b.x) / 2, (a.y + b.y) / 2, -5);
+        rope.rotation.z = Math.atan2(dy, dx) - Math.PI / 2;
+        env.add(rope);
+      }
+      // Flags — hang from each rope point, pointing down
+      for (let i = 0; i < pts.length; i++) {
         const flagCol = buntingCols[i % buntingCols.length];
         const flag = new THREE.Mesh(
           new THREE.ConeGeometry(0.38, 0.95, 3),
           mat(flagCol, { rough: 0.5, emissive: flagCol, emissiveIntensity: 0.25, side: THREE.DoubleSide })
         );
         flag.rotation.x = Math.PI;   // point downward
-        flag.position.set(x, y, -5);
+        // Cone base (now at the top after flip) sits on the rope; tip hangs below
+        flag.position.set(pts[i].x, pts[i].y - 0.475, -5);
         env.add(flag);
       }
     }
   }
 
-  // ---- Park: soft rainbow arc in the sky ----
+  // ---- Park: rainbow arc anchored to the horizon on both ends ----
   if (lvl.decor === "park") {
     const rainbowCols = [0xff4444, 0xff8844, 0xffcc33, 0x66dd55, 0x3388ee, 0x7744cc];
     for (let i = 0; i < rainbowCols.length; i++) {
       const arc = new THREE.Mesh(
-        new THREE.TorusGeometry(12 + i * 0.5, 0.25, 8, 40, Math.PI),
-        mat(rainbowCols[i], { transparent: true, opacity: 0.55, emissive: rainbowCols[i], emissiveIntensity: 0.45 })
+        new THREE.TorusGeometry(14 + i * 0.6, 0.32, 8, 48, Math.PI),
+        mat(rainbowCols[i], { transparent: true, opacity: 0.6, emissive: rainbowCols[i], emissiveIntensity: 0.5 })
       );
-      arc.position.set(lvl.length * 0.4, 4.5, -35);
+      // Torus half-arc endpoints sit at y = position.y; top of arc at
+      // y = position.y + radius. Setting y = 0 makes both feet touch
+      // the horizon (the ground plane at y = 0).
+      arc.position.set(lvl.length * 0.45, 0, -40);
       env.add(arc);
     }
   }
