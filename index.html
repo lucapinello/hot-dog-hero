@@ -13,10 +13,16 @@
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Baloo+2:wght@700;800&display=swap" rel="stylesheet">
 <style>
   html, body {
-    margin: 0; padding: 0; height: 100%;
+    margin: 0; padding: 0;
+    /* 100dvh = dynamic viewport height — adapts to iOS Safari's address bar
+       so the game never hides behind browser chrome. Fallback to 100% for
+       older browsers. */
+    height: 100%;
+    height: 100dvh;
     background: #111; color: #fff;
     font-family: 'Fredoka', 'Baloo 2', "Comic Sans MS", system-ui, sans-serif;
     overflow: hidden; user-select: none;
+    overscroll-behavior: none;
   }
   #container { position: fixed; inset: 0; }
   canvas { display: block; }
@@ -199,6 +205,9 @@
   /* ---------- Screens ---------- */
   .screen {
     position: fixed; inset: 0;
+    /* Use dynamic viewport so the screen fits iOS Safari's visible area
+       (address bar excluded when it hides on scroll). */
+    height: 100dvh;
     background: radial-gradient(circle at 50% 30%, #2a2a5a 0%, #0d0d22 100%);
     display: none;
     flex-direction: column; align-items: center; justify-content: flex-start;
@@ -414,6 +423,32 @@
   }
   .rotate-text  { font-size: 26px; font-weight: 700; margin-top: 18px; }
   .rotate-sub   { font-size: 16px; margin-top: 8px; color: #bbb; }
+
+  /* iOS "Add to Home Screen" hint — visible only when JS marks body with
+     `ios-not-installed`. iPhone Safari can't enter real fullscreen for web
+     apps, so this is the sanctioned path to a full-bleed experience. */
+  #ios-install-hint { display: none; }
+  body.ios-not-installed #ios-install-hint {
+    display: flex;
+    position: fixed;
+    left: 50%;
+    bottom: max(14px, env(safe-area-inset-bottom, 14px));
+    transform: translateX(-50%);
+    z-index: 12;
+    background: rgba(20, 20, 40, 0.92);
+    color: #fff;
+    padding: 10px 14px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 600;
+    gap: 6px; align-items: center;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+    white-space: nowrap;
+    max-width: calc(100vw - 24px);
+    font-family: 'Fredoka', system-ui, sans-serif;
+    pointer-events: none;
+  }
+  #ios-install-hint .up-arrow { font-size: 16px; }
 </style>
 </head>
 <body>
@@ -431,6 +466,11 @@
   <div class="rotate-icon">📱</div>
   <div class="rotate-text">Please rotate your phone</div>
   <div class="rotate-sub">Hot Dog Hero plays best in landscape</div>
+</div>
+
+<!-- iOS Safari hint: visible only when JS detects iPhone Safari not installed -->
+<div id="ios-install-hint">
+  <span>Tap Share <span class="up-arrow">⎘</span> → "Add to Home Screen" for fullscreen</span>
 </div>
 
 <!-- Character select -->
@@ -1008,11 +1048,31 @@ function buildLevelCards() {
     wrap.appendChild(card);
   });
 }
+// iPhone Safari (not iPad, not home-screen PWA) can't fullscreen arbitrary
+// elements — only <video>. So we feature-detect and fall back to the
+// "Add to Home Screen" hint shown on the splash.
+const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+  (navigator.userAgent.includes("Mac") && "ontouchend" in document);
+const isIPhone = /iPhone|iPod/.test(navigator.userAgent);
+const isStandalone = window.matchMedia("(display-mode: standalone)").matches ||
+  window.navigator.standalone === true;
+if (isIPhone && !isStandalone) {
+  document.body.classList.add("ios-not-installed");
+}
+
 function tryGoFullscreen() {
-  const el = document.documentElement;
-  const req = el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen || el.msRequestFullscreen;
-  if (req) {
-    try { const p = req.call(el); if (p && p.catch) p.catch(() => {}); } catch (_) {}
+  // iPhone Safari rejects requestFullscreen for non-<video> elements.
+  // Trying on the canvas first is slightly more compatible, then fallback.
+  const targets = [document.querySelector("canvas"), document.getElementById("container"), document.documentElement].filter(Boolean);
+  for (const el of targets) {
+    const req = el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen || el.msRequestFullscreen;
+    if (req) {
+      try {
+        const p = req.call(el);
+        if (p && p.catch) p.catch(() => {});
+        break; // only try the first element that has the API
+      } catch (_) {}
+    }
   }
   // Best-effort landscape lock (supported on Android Chrome, ignored elsewhere)
   if (screen.orientation && screen.orientation.lock) {
