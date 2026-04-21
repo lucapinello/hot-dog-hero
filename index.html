@@ -27,6 +27,15 @@
   #container { position: fixed; inset: 0; }
   canvas { display: block; }
 
+  /* Screen-edge vignette — cheap cinematic mood */
+  #vignette {
+    position: fixed; inset: 0;
+    pointer-events: none;
+    background: radial-gradient(ellipse at 50% 45%, rgba(0,0,0,0) 55%, rgba(0,0,0,0.35) 100%);
+    z-index: 3;
+    mix-blend-mode: multiply;
+  }
+
   /* ---------- HUD ---------- */
   #hud { position: fixed; inset: 0; pointer-events: none; }
 
@@ -467,6 +476,7 @@
 </head>
 <body>
 <div id="container"></div>
+<div id="vignette"></div>
 
 <!-- Touch controls (phones/tablets only; hidden on desktop via media query) -->
 <div id="touch-controls">
@@ -3726,6 +3736,37 @@ function buildEnvironment(lvl) {
   ground.receiveShadow = true;
   env.add(ground);
 
+  // ---- Sun / moon billboard with soft halo ----
+  // City = night → cool moon. Everyone else gets a warm sun. The inner disk
+  // is opaque+emissive, wrapped in two additive halos of increasing size.
+  const isNight = lvl.decor === "city";
+  const sunColor = isNight ? 0xf0f5ff : (lvl.decor === "park" ? 0xfff2b8 : lvl.decor === "beach" ? 0xfff8d0 : 0xffe89a);
+  const sunGroup = new THREE.Group();
+  // Core disk
+  const sunCore = new THREE.Mesh(
+    new THREE.CircleGeometry(2.2, 36),
+    new THREE.MeshBasicMaterial({ color: sunColor, transparent: true, opacity: 0.95, depthWrite: false })
+  );
+  sunGroup.add(sunCore);
+  // Inner halo
+  const halo1 = new THREE.Mesh(
+    new THREE.CircleGeometry(3.6, 36),
+    new THREE.MeshBasicMaterial({ color: sunColor, transparent: true, opacity: 0.35, blending: THREE.AdditiveBlending, depthWrite: false })
+  );
+  halo1.position.z = -0.05;
+  sunGroup.add(halo1);
+  // Outer halo — biggest, softest
+  const halo2 = new THREE.Mesh(
+    new THREE.CircleGeometry(6.0, 36),
+    new THREE.MeshBasicMaterial({ color: sunColor, transparent: true, opacity: 0.15, blending: THREE.AdditiveBlending, depthWrite: false })
+  );
+  halo2.position.z = -0.1;
+  sunGroup.add(halo2);
+  sunGroup.position.set(0, isNight ? 20 : 18, -55);
+  sunGroup.userData = { actor: "sun", halo1, halo2, core: sunCore };
+  env.add(sunGroup);
+  actors.push(sunGroup);
+
   // Background strip
   const sideGeo = new THREE.PlaneGeometry(lvl.length + 40, 60);
   const sideBack = new THREE.Mesh(sideGeo, mat(lvl.sideColor, { rough: 0.95 }));
@@ -5783,6 +5824,16 @@ function update(dt) {
     for (const a of world.env.userData.actors) {
       const u = a.userData || a;
       switch (u.actor) {
+        case "sun": {
+          // Keep the sun visible in the distant sky by following the camera.
+          // It stays roughly over the player's shoulder so it reads as a
+          // real atmospheric element instead of disappearing off-screen.
+          if (player) a.position.x = player.x + 14;
+          const breathe = 1 + Math.sin(t * 0.8) * 0.06;
+          u.halo1.scale.setScalar(breathe);
+          u.halo2.scale.setScalar(1 + Math.sin(t * 0.6 + 1) * 0.08);
+          break;
+        }
         case "airliner": {
           const x = u.startX + t * u.speed;
           a.position.x = ((x % (u.len + 80)) + (u.len + 80)) % (u.len + 80) - 40;
@@ -5899,6 +5950,15 @@ function update(dt) {
         }
       }
     }
+  }
+
+  // Combo ambient warmth: as the combo climbs, the whole scene warms up
+  // and brightens slightly — a subtle mood boost that rewards good play.
+  if (player && player.combo != null) {
+    const t = Math.min(1, (player.combo - 1) / 9); // 0 at combo=1, 1 at combo=10
+    ambient.intensity = 0.7 + t * 0.25;
+    ambient.color.setRGB(1, 0.93 - t * 0.05, 0.86 - t * 0.08);
+    rim.intensity = 0.35 + t * 0.5;
   }
 
   updateHUD();
