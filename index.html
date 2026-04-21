@@ -387,6 +387,22 @@
   #touch-left  { left: max(20px, env(safe-area-inset-left, 20px)); }
   #touch-right { left: calc(max(20px, env(safe-area-inset-left, 20px)) + 108px); }
 
+  /* Altitude buttons — right side, stacked vertically. Only visible when
+     the airplane power-up is active (body.in-airplane). */
+  #touch-up, #touch-down { display: none; }
+  body.in-airplane #touch-up,
+  body.in-airplane #touch-down { display: flex; }
+  #touch-down {
+    right: max(20px, env(safe-area-inset-right, 20px));
+    bottom: max(24px, env(safe-area-inset-bottom, 24px));
+    left: auto;
+  }
+  #touch-up {
+    right: max(20px, env(safe-area-inset-right, 20px));
+    bottom: calc(max(24px, env(safe-area-inset-bottom, 24px)) + 102px);
+    left: auto;
+  }
+
   @media (pointer: coarse) and (hover: none) {
     #touch-controls {
       display: block;
@@ -459,6 +475,8 @@
   <div id="touch-jumpzone"></div>
   <div class="touch-btn" id="touch-left">◀</div>
   <div class="touch-btn" id="touch-right">▶</div>
+  <div class="touch-btn" id="touch-up">▲</div>
+  <div class="touch-btn" id="touch-down">▼</div>
 </div>
 
 <!-- Rotate-to-landscape hint (touch + portrait only) -->
@@ -1165,6 +1183,10 @@ window.addEventListener("keyup", (e) => { keys[e.code] = false; keys[e.key] = fa
   };
   bindHold(left, "ArrowLeft");
   bindHold(right, "ArrowRight");
+  const up = document.getElementById("touch-up");
+  const down = document.getElementById("touch-down");
+  if (up) bindHold(up, "ArrowUp");
+  if (down) bindHold(down, "ArrowDown");
 
   jumpZone.addEventListener("touchstart", (e) => {
     e.preventDefault();
@@ -4841,6 +4863,8 @@ function attachVehicle(type) {
   else if (type === "airplane") player.vehicleTimer = 8.0;
   player.invuln = 30;
   Audio.sfxVehiclePickup(type);
+  // Show altitude buttons on mobile while flying
+  document.body.classList.toggle("in-airplane", type === "airplane");
 }
 
 function detachVehicle() {
@@ -4848,6 +4872,14 @@ function detachVehicle() {
   player.vehicle = null;
   player.vehicleMesh = null;
   player.vehicleTimer = 0;
+  document.body.classList.remove("in-airplane");
+  // Clear any held altitude keys so the player stops climbing/diving on foot
+  keys["ArrowUp"] = false;
+  keys["ArrowDown"] = false;
+  const up = document.getElementById("touch-up");
+  const down = document.getElementById("touch-down");
+  if (up) up.classList.remove("pressed");
+  if (down) down.classList.remove("pressed");
 }
 
 function vehicleSpeedMul() {
