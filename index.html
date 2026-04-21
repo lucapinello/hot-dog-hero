@@ -3403,18 +3403,19 @@ function buildDecor_beach() {
       coco.position.set((Math.random() - 0.5) * 0.4, 3.9, (Math.random() - 0.5) * 0.4); dec.add(coco);
     }
   } else if (t < 0.65) {
-    // Beach umbrella
+    // Beach umbrella — canopy opens downward (narrow at the top where it
+    // meets the pole, wide at the bottom rim)
     const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 3, 10), mat(0x888888));
     pole.position.y = 1.5; dec.add(pole);
     const stripeCols = [0xff3333, 0xffffff, 0x3366ff, 0xffffff, 0xffcc00, 0xffffff];
     for (let i = 0; i < 6; i++) {
       const seg = new THREE.Mesh(
-        new THREE.CylinderGeometry(1.2, 0.1, 0.6, 4, 1, true, (i / 6) * Math.PI * 2, Math.PI / 3),
+        new THREE.CylinderGeometry(0.1, 1.2, 0.6, 4, 1, true, (i / 6) * Math.PI * 2, Math.PI / 3),
         mat(stripeCols[i], { rough: 0.5, side: THREE.DoubleSide })
       );
       seg.position.y = 2.9; dec.add(seg);
     }
-    // umbrella peak
+    // Umbrella peak (top knob)
     const peak = new THREE.Mesh(new THREE.SphereGeometry(0.1, 10, 8), mat(0x222222));
     peak.position.y = 3.3; dec.add(peak);
   } else if (t < 0.8) {
@@ -3773,11 +3774,13 @@ function buildEnvironment(lvl) {
   env.add(sunGroup);
   actors.push(sunGroup);
 
-  // Background strip
-  const sideGeo = new THREE.PlaneGeometry(lvl.length + 40, 60);
+  // Background strip — on beach this would cover the sea, so shrink it
+  // to a narrow band along the shore and let the water fill the rest.
+  const isBeachLvl = lvl.decor === "beach";
+  const sideGeo = new THREE.PlaneGeometry(lvl.length + 40, isBeachLvl ? 4 : 60);
   const sideBack = new THREE.Mesh(sideGeo, mat(lvl.sideColor, { rough: 0.95 }));
   sideBack.rotation.x = -Math.PI / 2;
-  sideBack.position.set(lvl.length / 2, -0.02, -37);
+  sideBack.position.set(lvl.length / 2, -0.02, isBeachLvl ? -9 : -37);
   sideBack.receiveShadow = true;
   env.add(sideBack);
 
