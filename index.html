@@ -2,6 +2,11 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="theme-color" content="#1a1a2e" />
 <title>Hot Dog Hero 3D 🌭</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -305,10 +310,89 @@
   .result-overlay .stats { font-size: 22px; margin: 10px 0 20px; }
   .result-overlay .hs-line { font-size: 18px; color: #9df; margin-bottom: 20px; }
   .result-overlay .new-hs { color: #ffcc00; font-weight: bold; }
+
+  /* -------- Touch controls (phones/tablets only) -------- */
+  #touch-controls { display: none; }
+  #touch-jumpzone {
+    position: absolute; inset: 0;
+    pointer-events: auto;
+    background: transparent;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .touch-btn {
+    position: absolute;
+    bottom: max(24px, env(safe-area-inset-bottom, 24px));
+    width: 88px; height: 88px;
+    background: rgba(255,255,255,0.18);
+    border: 3px solid rgba(255,255,255,0.6);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 42px; color: rgba(255,255,255,0.95);
+    pointer-events: auto;
+    user-select: none; -webkit-user-select: none;
+    touch-action: none;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+    transition: background 0.08s, transform 0.08s;
+  }
+  .touch-btn.pressed {
+    background: rgba(255,204,0,0.55);
+    transform: scale(0.92);
+  }
+  #touch-left  { left: max(20px, env(safe-area-inset-left, 20px)); }
+  #touch-right { left: calc(max(20px, env(safe-area-inset-left, 20px)) + 108px); }
+
+  @media (pointer: coarse) and (hover: none) {
+    #touch-controls {
+      display: block;
+      position: fixed; inset: 0;
+      z-index: 4;              /* below overlays (5) and menu screens (10) */
+      pointer-events: none;
+    }
+    /* Hide controls while any menu/pause/result screen is showing */
+    body:has(.screen.active) #touch-controls,
+    body:has(.pause-overlay.active) #touch-controls,
+    body:has(.result-overlay.active) #touch-controls { display: none; }
+  }
+
+  /* -------- Rotate-to-landscape hint (touch + portrait only) -------- */
+  #rotate-hint {
+    display: none;
+    position: fixed; inset: 0; z-index: 200;
+    background: radial-gradient(circle at 50% 40%, #2a2a5a 0%, #0d0d22 100%);
+    color: #fff;
+    flex-direction: column; align-items: center; justify-content: center;
+    text-align: center; padding: 24px;
+    font-family: 'Fredoka', system-ui, sans-serif;
+  }
+  @media (pointer: coarse) and (hover: none) and (orientation: portrait) {
+    #rotate-hint { display: flex; }
+  }
+  .rotate-icon { font-size: 96px; animation: rotateHintSpin 2.2s ease-in-out infinite; }
+  @keyframes rotateHintSpin {
+    0%   { transform: rotate(-15deg); }
+    50%  { transform: rotate(75deg); }
+    100% { transform: rotate(-15deg); }
+  }
+  .rotate-text  { font-size: 26px; font-weight: 700; margin-top: 18px; }
+  .rotate-sub   { font-size: 16px; margin-top: 8px; color: #bbb; }
 </style>
 </head>
 <body>
 <div id="container"></div>
+
+<!-- Touch controls (phones/tablets only; hidden on desktop via media query) -->
+<div id="touch-controls">
+  <div id="touch-jumpzone"></div>
+  <div class="touch-btn" id="touch-left">◀</div>
+  <div class="touch-btn" id="touch-right">▶</div>
+</div>
+
+<!-- Rotate-to-landscape hint (touch + portrait only) -->
+<div id="rotate-hint">
+  <div class="rotate-icon">📱</div>
+  <div class="rotate-text">Please rotate your phone</div>
+  <div class="rotate-sub">Hot Dog Hero plays best in landscape</div>
+</div>
 
 <!-- Character select -->
 <div id="screen-char" class="screen active">
@@ -939,6 +1023,45 @@ window.addEventListener("keydown", (e) => {
   if (e.code === "Space") e.preventDefault();
 });
 window.addEventListener("keyup", (e) => { keys[e.code] = false; keys[e.key] = false; });
+
+// ---------- Touch controls ----------
+(function setupTouch() {
+  const left = document.getElementById("touch-left");
+  const right = document.getElementById("touch-right");
+  const jumpZone = document.getElementById("touch-jumpzone");
+  if (!left || !right || !jumpZone) return;
+
+  const bindHold = (el, keyCode) => {
+    const press = (e) => {
+      e.preventDefault();
+      if (!Audio.ctx) Audio.init();
+      keys[keyCode] = true;
+      el.classList.add("pressed");
+    };
+    const release = (e) => {
+      if (e) e.preventDefault();
+      keys[keyCode] = false;
+      el.classList.remove("pressed");
+    };
+    el.addEventListener("touchstart", press, { passive: false });
+    el.addEventListener("touchend", release, { passive: false });
+    el.addEventListener("touchcancel", release, { passive: false });
+    el.addEventListener("mousedown", press);
+    el.addEventListener("mouseup", release);
+    el.addEventListener("mouseleave", release);
+  };
+  bindHold(left, "ArrowLeft");
+  bindHold(right, "ArrowRight");
+
+  jumpZone.addEventListener("touchstart", (e) => {
+    e.preventDefault();
+    if (!Audio.ctx) Audio.init();
+    if (gameState === "playing") tryJump();
+  }, { passive: false });
+
+  // Prevent double-tap zoom on iOS during gameplay
+  document.addEventListener("gesturestart", (e) => e.preventDefault());
+})();
 
 // ---------- Game state ----------
 let gameState = "menu";
