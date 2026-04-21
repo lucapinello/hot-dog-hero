@@ -3471,18 +3471,78 @@ function buildDecor_beach() {
   const dec = new THREE.Group();
   let near = false;
   if (t < 0.4) {
-    // Palm tree
-    const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.3, 4, 12), mat(0x7b4a1a, { rough: 0.8 }));
-    trunk.position.y = 2; trunk.castShadow = true; dec.add(trunk);
-    for (let a = 0; a < 7; a++) {
-      const leaf = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.08, 0.3), mat(0x2f8f3b, { rough: 0.7 }));
-      const ang = (a / 7) * Math.PI * 2;
-      leaf.position.set(Math.cos(ang) * 0.7, 4.0, Math.sin(ang) * 0.7);
-      leaf.rotation.y = ang; leaf.rotation.z = -0.35; dec.add(leaf);
+    // Palm tree — trunk with segmented bark rings + proper feathered fronds
+    const trunkMat = mat(0x7b4a1a, { rough: 0.85 });
+    const trunkDarkMat = mat(0x5a3a12, { rough: 0.9 });
+    const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.32, 4.1, 14), trunkMat);
+    trunk.position.y = 2.05; trunk.castShadow = true; dec.add(trunk);
+    // Bark rings (horizontal grooves down the trunk)
+    for (let r = 0; r < 6; r++) {
+      const ring = new THREE.Mesh(
+        new THREE.TorusGeometry(0.26 + r * 0.012, 0.018, 6, 16),
+        trunkDarkMat
+      );
+      ring.position.y = 0.4 + r * 0.6;
+      ring.rotation.x = Math.PI / 2;
+      dec.add(ring);
     }
-    for (let i = 0; i < 2; i++) {
-      const coco = new THREE.Mesh(new THREE.SphereGeometry(0.12, 14, 10), mat(0x5a3a1a));
-      coco.position.set((Math.random() - 0.5) * 0.4, 3.9, (Math.random() - 0.5) * 0.4); dec.add(coco);
+
+    // Fronds — each is a central spine arcing outward+down with leaflets
+    // running along both sides like a feather
+    const spineMat = mat(0x3a7a28, { rough: 0.75 });
+    const leafMatA = mat(0x4aaa3a, { rough: 0.7 });
+    const leafMatB = mat(0x3a9032, { rough: 0.75 });
+    const frondCount = 8;
+    for (let a = 0; a < frondCount; a++) {
+      const frond = new THREE.Group();
+      frond.position.set(0, 4.0, 0);
+      frond.rotation.y = (a / frondCount) * Math.PI * 2 + 0.15;
+      // Slight random tilt so the crown isn't perfectly flat
+      frond.rotation.z = 0.15 + Math.random() * 0.08;
+
+      // Central spine — tapered cylinder laid horizontal along +X, drooped
+      const spine = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.04, 0.015, 1.9, 8),
+        spineMat
+      );
+      spine.rotation.z = -Math.PI / 2 - 0.25;
+      spine.position.set(0.95, -0.22, 0);
+      frond.add(spine);
+
+      // Leaflets along the spine — pairs, getting smaller toward the tip
+      const leafletCount = 8;
+      for (let i = 1; i <= leafletCount; i++) {
+        const t = i / leafletCount;
+        // Position along the drooping spine (-0.3 to -0.7 rad tilt)
+        const bend = -0.25 - t * 0.5;
+        const along = 0.1 + t * 1.75;
+        const xA = along * Math.cos(bend);
+        const yA = along * Math.sin(bend);
+        const leafLen = 0.55 - t * 0.32;
+        const leafMat = i % 2 === 0 ? leafMatA : leafMatB;
+        for (const sz of [-1, 1]) {
+          const leaf = new THREE.Mesh(
+            new THREE.ConeGeometry(0.06, leafLen, 5),
+            leafMat
+          );
+          leaf.position.set(xA, yA - 0.01, sz * 0.04);
+          // Splay outward in the local Z direction; tip angled slightly back
+          leaf.rotation.z = sz * -(Math.PI / 2 + 0.35);
+          leaf.rotation.x = sz * -0.25;
+          frond.add(leaf);
+        }
+      }
+
+      dec.add(frond);
+    }
+
+    // Coconuts clustered near the crown
+    for (let i = 0; i < 3; i++) {
+      const coco = new THREE.Mesh(new THREE.SphereGeometry(0.13, 14, 10), mat(0x4a2a12, { rough: 0.85 }));
+      const ang = Math.random() * Math.PI * 2;
+      coco.position.set(Math.cos(ang) * 0.18, 3.9, Math.sin(ang) * 0.18);
+      coco.castShadow = true;
+      dec.add(coco);
     }
   } else if (t < 0.65) {
     // Beach umbrella — canopy opens downward (narrow at the top where it
