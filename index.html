@@ -40,13 +40,15 @@
 
   #hud .score-box {
     position: absolute;
-    top: 60px; left: 20px;
+    top: 76px; right: 20px;
     background: rgba(0,0,0,0.5);
     padding: 6px 14px;
     border-radius: 12px;
     display: flex; flex-direction: column; gap: 2px;
     font-size: 14px;
     min-width: 140px;
+    text-align: right;
+    align-items: flex-end;
   }
   #hud .score-box .score {
     font-size: 22px; font-weight: bold;
@@ -1031,10 +1033,10 @@ document.querySelectorAll("#char-cards .card").forEach((el) => {
     chosenChar = el.dataset.char;
     document.querySelectorAll("#char-cards .card").forEach((c) => c.classList.remove("selected"));
     el.classList.add("selected");
-    Audio.init();
+    Audio._ensure();
   });
 });
-$("char-continue").addEventListener("click", () => { Audio.init(); showLevelSelect(); });
+$("char-continue").addEventListener("click", () => { Audio._ensure(); showLevelSelect(); });
 
 function buildLevelCards() {
   const wrap = $("level-cards");
@@ -1092,6 +1094,7 @@ function tryGoFullscreen() {
   }
 }
 $("level-play").addEventListener("click", () => {
+  Audio._ensure();
   tryGoFullscreen();
   startLevel(chosenLevel);
 });
@@ -1114,8 +1117,8 @@ window.addEventListener("keydown", (e) => {
   keys[e.code] = true;
   keys[e.key] = true;
 
-  // First interaction → init audio context
-  if (!Audio.ctx) Audio.init();
+  // First interaction → init + resume audio context (iOS needs both)
+  Audio._ensure();
 
   if (screenChar.classList.contains("active")) {
     if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
@@ -1157,7 +1160,7 @@ window.addEventListener("keyup", (e) => { keys[e.code] = false; keys[e.key] = fa
   const bindHold = (el, keyCode) => {
     const press = (e) => {
       e.preventDefault();
-      if (!Audio.ctx) Audio.init();
+      Audio._ensure();
       keys[keyCode] = true;
       el.classList.add("pressed");
     };
@@ -1182,7 +1185,7 @@ window.addEventListener("keyup", (e) => { keys[e.code] = false; keys[e.key] = fa
 
   jumpZone.addEventListener("touchstart", (e) => {
     e.preventDefault();
-    if (!Audio.ctx) Audio.init();
+    Audio._ensure();
     if (gameState === "playing") tryJump();
   }, { passive: false });
 
@@ -5654,6 +5657,9 @@ function update(dt) {
     const timeBonus = Math.max(0, Math.floor(500 - world.time * 2));
     const healthBonus = player.hearts * 100;
     player.score += timeBonus + healthBonus;
+    // Sync HUD one last time so the on-screen score matches the final
+    // result overlay (update() early-returns once gameState !== "playing")
+    updateHUD();
     Audio.sfxWin();
     Audio.stopMusic();
     // Mega confetti cannon: ring burst + sky fountains + shake
