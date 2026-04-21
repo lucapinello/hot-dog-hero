@@ -4474,22 +4474,88 @@ function buildEnvironment(lvl) {
   // Far mountains (background).
   // Beach is special: the sea plane spans z = -10 to -90, so mountains must
   // sit BEHIND the water or they'll look like sand islands poking out.
+  // Each level gets a mountain palette tuned to its mood.
   const isBeach = lvl.decor === "beach";
-  const mountainMat = mat(0x6a80a8, { rough: 1 });
+  const mountainPalettes = {
+    street:  { near: 0x7990b8, far: 0x5468a0 },
+    park:    { near: 0x7aa0c8, far: 0x5a78a0 },
+    beach:   { near: 0xd099a0, far: 0xa06878 },  // warm pink/mauve sunset mountains
+    city:    { near: 0x5a4a8a, far: 0x3a2a6a },  // deep violet night mountains
+    airport: { near: 0x7a8aa8, far: 0x4a5a80 },
+  };
+  const pal = mountainPalettes[lvl.decor] || mountainPalettes.street;
+  const mountainMat = mat(pal.near, { rough: 1 });
   const nearMtnZ = isBeach ? -100 : -50;
   for (let i = 0; i < 22; i++) {
     const m = new THREE.Mesh(new THREE.ConeGeometry(4 + Math.random() * 3, 6 + Math.random() * 5, 6), mountainMat);
     m.position.set(Math.random() * lvl.length, 3, nearMtnZ - Math.random() * 15);
     env.add(m);
   }
-
-  // A second-layer of further, darker mountains
-  const mountain2Mat = mat(0x4a5f8a, { rough: 1 });
+  const mountain2Mat = mat(pal.far, { rough: 1 });
   const farMtnZ = isBeach ? -125 : -75;
   for (let i = 0; i < 20; i++) {
     const m = new THREE.Mesh(new THREE.ConeGeometry(6 + Math.random() * 4, 9 + Math.random() * 5, 5), mountain2Mat);
     m.position.set(Math.random() * lvl.length, 4, farMtnZ - Math.random() * 15);
     env.add(m);
+  }
+
+  // ---- Colorful triangular bunting strung across the sky ----
+  // Adds a festive party feel without cluttering the play area. Each level
+  // gets its own color palette. Skipped for City (night looks cleaner).
+  if (lvl.decor === "street" || lvl.decor === "park" || lvl.decor === "beach" || lvl.decor === "airport") {
+    const buntingCols = lvl.decor === "beach"
+      ? [0xff6644, 0xffcc33, 0xffffff, 0x44ccff, 0xff66cc]
+      : lvl.decor === "park"
+        ? [0xff3366, 0xffcc33, 0xffffff, 0x66dd66, 0x9966ff, 0x33ccff]
+        : lvl.decor === "airport"
+          ? [0xff3355, 0xffffff, 0x3377cc, 0xffdd33, 0xffffff]
+          : [0xff4466, 0xff8844, 0xffdd33, 0x44cc77, 0x3388ee, 0xaa44dd];
+    const stringSpan = 40;           // every N units along the level
+    const totalStrings = Math.max(4, Math.floor(lvl.length / stringSpan));
+    for (let s = 0; s < totalStrings; s++) {
+      const xCenter = 10 + s * stringSpan;
+      const spanX = 22, count = 12;
+      for (let i = 0; i < count; i++) {
+        const t = i / (count - 1);
+        const x = xCenter - spanX / 2 + t * spanX;
+        // Gentle catenary sag between two posts
+        const y = 8.5 - Math.sin(t * Math.PI) * 2.0;
+        const flagCol = buntingCols[i % buntingCols.length];
+        const flag = new THREE.Mesh(
+          new THREE.ConeGeometry(0.38, 0.95, 3),
+          mat(flagCol, { rough: 0.5, emissive: flagCol, emissiveIntensity: 0.25, side: THREE.DoubleSide })
+        );
+        flag.rotation.x = Math.PI;   // point downward
+        flag.position.set(x, y, -5);
+        env.add(flag);
+      }
+    }
+  }
+
+  // ---- Park: soft rainbow arc in the sky ----
+  if (lvl.decor === "park") {
+    const rainbowCols = [0xff4444, 0xff8844, 0xffcc33, 0x66dd55, 0x3388ee, 0x7744cc];
+    for (let i = 0; i < rainbowCols.length; i++) {
+      const arc = new THREE.Mesh(
+        new THREE.TorusGeometry(12 + i * 0.5, 0.25, 8, 40, Math.PI),
+        mat(rainbowCols[i], { transparent: true, opacity: 0.55, emissive: rainbowCols[i], emissiveIntensity: 0.45 })
+      );
+      arc.position.set(lvl.length * 0.4, 4.5, -35);
+      env.add(arc);
+    }
+  }
+
+  // ---- City: distant sparkle-stars / fireworks pops ----
+  if (lvl.decor === "city") {
+    for (let i = 0; i < 30; i++) {
+      const col = [0xff4488, 0x44ddff, 0xffdd44, 0xbb55ff, 0xffffff][i % 5];
+      const spark = new THREE.Mesh(
+        new THREE.SphereGeometry(0.3, 10, 8),
+        mat(col, { emissive: col, emissiveIntensity: 1.5, transparent: true, opacity: 0.9 })
+      );
+      spark.position.set(Math.random() * lvl.length, 14 + Math.random() * 10, -25 - Math.random() * 20);
+      env.add(spark);
+    }
   }
 
   return env;
