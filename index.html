@@ -2424,104 +2424,102 @@ function buildTrampoline() {
 function buildCollectible(type) {
   const g = new THREE.Group();
   if (type === "hotdog") {
-    // ---- Realistic hot dog ----
-    const bunMat = mat(0xd89a4a, { rough: 0.85 });
-    const bunDarkMat = mat(0xa06a28, { rough: 0.9 });
+    // ---- Emoji-style hot dog 🌭 ----
+    // Layout: one long bun lying horizontally, two bun "lips" curving up on
+    // the front and back sides to form a cleft, sausage nestled visibly in
+    // the cleft, mustard zig-zag on top.
+    const bunLight = mat(0xe9b36d, { rough: 0.85 });
+    const bunMid   = mat(0xd49958, { rough: 0.9 });
+    const bunEdge  = mat(0xa86a2c, { rough: 0.95 });
 
-    // Bottom bun half (wider cradle)
-    const bunBottom = new THREE.Mesh(
-      new THREE.CapsuleGeometry(0.17, 0.38, 10, 24),
-      bunMat
+    // Main bun body — elongated capsule lying along X, slightly flattened
+    // vertically so it reads as a cradle rather than a fat log
+    const bunBody = new THREE.Mesh(
+      new THREE.CapsuleGeometry(0.15, 0.5, 12, 28),
+      bunLight
     );
-    bunBottom.rotation.z = Math.PI / 2;
-    bunBottom.scale.set(1, 0.55, 1);
-    bunBottom.position.y = -0.04;
-    g.add(bunBottom);
+    bunBody.rotation.z = Math.PI / 2;
+    bunBody.scale.set(1, 0.7, 1);
+    bunBody.position.y = 0.05;
+    g.add(bunBody);
 
-    // Bottom bun shadow crease
-    const crease = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.16, 0.16, 0.4, 20),
-      bunDarkMat
-    );
-    crease.rotation.z = Math.PI / 2;
-    crease.scale.set(1, 1, 0.15);
-    crease.position.y = 0.02;
-    g.add(crease);
+    // Two "bun lips" — side rolls curving up around the sausage, creating
+    // the open-bun cleft you see on the emoji
+    for (const sz of [-1, 1]) {
+      const lip = new THREE.Mesh(
+        new THREE.CapsuleGeometry(0.07, 0.46, 10, 18),
+        bunLight
+      );
+      lip.rotation.z = Math.PI / 2;
+      lip.position.set(0, 0.13, sz * 0.1);
+      g.add(lip);
+    }
 
-    // Top bun half (curves over)
-    const bunTop = new THREE.Mesh(
-      new THREE.CapsuleGeometry(0.15, 0.36, 10, 24),
-      bunMat
-    );
-    bunTop.rotation.z = Math.PI / 2;
-    bunTop.scale.set(1, 0.5, 1);
-    bunTop.position.y = 0.14;
-    g.add(bunTop);
-
-    // Sausage (ends poke out of bun)
-    const sausageMat = mat(0xc24a28, { rough: 0.45, metal: 0.1 });
+    // Sausage — sits in the cleft between the lips, visibly proud of the bun
+    const sausageMat = mat(0xc64a2a, { rough: 0.35, metal: 0.05 });
     const sausage = new THREE.Mesh(
-      new THREE.CapsuleGeometry(0.105, 0.52, 14, 24),
+      new THREE.CapsuleGeometry(0.085, 0.54, 16, 28),
       sausageMat
     );
     sausage.rotation.z = Math.PI / 2;
-    sausage.position.y = 0.07;
+    sausage.position.y = 0.18;
     g.add(sausage);
 
-    // Sausage darker end caps (grill marks)
-    for (const sx of [-0.37, 0.37]) {
-      const cap = new THREE.Mesh(
-        new THREE.SphereGeometry(0.105, 16, 12),
-        mat(0x803018, { rough: 0.6 })
+    // Sausage tips — slightly darker rounded caps where it pokes out the ends
+    for (const sx of [-0.355, 0.355]) {
+      const tip = new THREE.Mesh(
+        new THREE.SphereGeometry(0.086, 14, 12),
+        mat(0x9d3a1a, { rough: 0.5 })
       );
-      cap.scale.set(0.3, 1, 1);
-      cap.position.set(sx, 0.07, 0);
-      g.add(cap);
+      tip.scale.set(0.35, 1, 1);
+      tip.position.set(sx, 0.18, 0);
+      g.add(tip);
     }
 
-    // Glossy highlight on sausage
+    // Glossy highlight on top of sausage
     const highlight = new THREE.Mesh(
-      new THREE.CapsuleGeometry(0.03, 0.35, 6, 12),
-      mat(0xffa070, { rough: 0.1, emissive: 0xff6040, emissiveIntensity: 0.15 })
+      new THREE.CapsuleGeometry(0.022, 0.4, 6, 12),
+      mat(0xff8c66, { rough: 0.08, emissive: 0xff5a33, emissiveIntensity: 0.28 })
     );
     highlight.rotation.z = Math.PI / 2;
-    highlight.position.set(0, 0.15, 0.03);
+    highlight.position.set(0, 0.25, 0.015);
     g.add(highlight);
 
-    // Mustard zig-zag — individual segments for realism
-    const mustardMat = mat(0xf5c800, { rough: 0.35, emissive: 0xffa000, emissiveIntensity: 0.25 });
-    const zigPoints = [
-      [-0.22, 0.155, -0.03], [-0.13, 0.16, 0.04], [-0.04, 0.155, -0.03],
-      [0.05, 0.16, 0.04], [0.14, 0.155, -0.03], [0.23, 0.16, 0.04],
+    // Mustard zig-zag running the length of the sausage
+    const mustardMat = mat(0xffcc1f, { rough: 0.3, emissive: 0xffa000, emissiveIntensity: 0.35 });
+    const zig = [
+      [-0.24, 0.26, -0.04], [-0.14, 0.265, 0.04], [-0.04, 0.26, -0.04],
+      [ 0.06, 0.265, 0.04], [ 0.16, 0.26, -0.04], [ 0.24, 0.265, 0.04],
     ];
-    for (let i = 0; i < zigPoints.length - 1; i++) {
-      const [ax, ay, az] = zigPoints[i];
-      const [bx, by, bz] = zigPoints[i + 1];
-      const midX = (ax + bx) / 2;
-      const midY = (ay + by) / 2;
-      const midZ = (az + bz) / 2;
+    for (let i = 0; i < zig.length - 1; i++) {
+      const [ax, ay, az] = zig[i];
+      const [bx, by, bz] = zig[i + 1];
       const dx = bx - ax, dy = by - ay, dz = bz - az;
-      const len = Math.sqrt(dx * dx + dy * dy + dz * dz);
+      const len = Math.hypot(dx, dy, dz);
       const seg = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.018, 0.018, len, 10),
+        new THREE.CylinderGeometry(0.017, 0.017, len, 10),
         mustardMat
       );
-      seg.position.set(midX, midY, midZ);
+      seg.position.set((ax + bx) / 2, (ay + by) / 2, (az + bz) / 2);
       seg.lookAt(bx, by, bz);
       seg.rotateX(Math.PI / 2);
       g.add(seg);
+      // Rounded joint at each kink so the zig-zag reads as a continuous drizzle
+      const joint = new THREE.Mesh(new THREE.SphereGeometry(0.017, 10, 8), mustardMat);
+      joint.position.set(ax, ay, az);
+      g.add(joint);
     }
+    const lastJoint = new THREE.Mesh(new THREE.SphereGeometry(0.017, 10, 8), mustardMat);
+    lastJoint.position.set(zig[zig.length - 1][0], zig[zig.length - 1][1], zig[zig.length - 1][2]);
+    g.add(lastJoint);
 
-    // Relish / chopped onion bits sprinkled on top
-    const relishCols = [0x88c040, 0x9ad048, 0xffffff];
-    for (let i = 0; i < 8; i++) {
-      const bit = new THREE.Mesh(
-        new THREE.BoxGeometry(0.028, 0.024, 0.028),
-        mat(relishCols[i % 3], { rough: 0.7 })
-      );
-      bit.position.set(-0.22 + i * 0.06, 0.18, (Math.random() - 0.5) * 0.06);
-      bit.rotation.y = Math.random() * Math.PI;
-      g.add(bit);
+    // Subtle sesame seeds scattered on top of the bun lips
+    const seedMat = mat(0xfff0b8, { rough: 0.6 });
+    for (let i = 0; i < 6; i++) {
+      const seed = new THREE.Mesh(new THREE.SphereGeometry(0.013, 8, 6), seedMat);
+      seed.scale.set(1.6, 0.55, 1.0);
+      seed.position.set(-0.22 + i * 0.09, 0.18, (i % 2 === 0 ? 1 : -1) * 0.14);
+      g.add(seed);
     }
   } else if (type === "ketchup") {
     // ---- Classic glass ketchup bottle ----
