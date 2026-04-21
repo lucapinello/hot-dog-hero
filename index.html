@@ -5344,7 +5344,19 @@ function update(dt) {
   }
 
   const { legL, legR, armL, armR } = player.group.userData;
-  if (player.onGround && !player.vehicle) {
+  if (player.flipTimer && player.flipTimer > 0 && !player.vehicle) {
+    // Mid-flip: gymnast tuck — arms sweep outward then tuck back in, legs
+    // bend at the knees. Peaks at mid-flip (prog=0.5) and eases back for
+    // a clean landing pose.
+    const flipProg = 1 - player.flipTimer / player.flipDuration;
+    const peak = Math.sin(flipProg * Math.PI);
+    const armSpread = peak * 1.7;
+    armL.rotation.z = -0.4 - armSpread;
+    armR.rotation.z =  0.4 + armSpread;
+    const legTuck = peak * 0.9;
+    legL.rotation.z =  0.3 + legTuck;
+    legR.rotation.z = -0.3 - legTuck;
+  } else if (player.onGround && !player.vehicle) {
     const t = world.time * 12;
     const swing = 0.7;
     legL.rotation.z = Math.sin(t) * swing;
@@ -5363,8 +5375,11 @@ function update(dt) {
     legL.rotation.z = 0.8; legR.rotation.z = 0.8;
     armL.rotation.z = 1.1; armR.rotation.z = 1.1;
   } else {
+    // Plain airborne — arms raise on ascent, fall with gravity on descent
     legL.rotation.z = 0.3; legR.rotation.z = -0.3;
-    armL.rotation.z = -0.4; armR.rotation.z = 0.4;
+    const jumpLift = Math.max(-0.25, Math.min(0.9, player.vy * 0.065));
+    armL.rotation.z = -0.4 - jumpLift;
+    armR.rotation.z =  0.4 + jumpLift;
   }
 
   if (player.invuln > 0) {
