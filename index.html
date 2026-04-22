@@ -4771,6 +4771,10 @@ function startLevel(idx) {
 
   const charGroup = buildCharacter(chosenChar);
   charGroup.position.set(2, 0, 0);
+  // Face is built along +X (screen-right = scrolling direction). Tilt the
+  // character slightly toward the camera (negative Y rotation) so the face
+  // is visible in a ¾ angle while still clearly pointing right.
+  charGroup.rotation.y = -0.35;
   scene.add(charGroup);
 
   // Ground shadow blob — tracks player X/Z, shrinks as player jumps higher
