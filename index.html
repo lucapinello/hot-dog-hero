@@ -382,11 +382,15 @@
   .touch-big { width: 100px; height: 100px; font-size: 44px; }
 
   /* RUN on bottom-left, hidden when piloting the airplane (the plane flies
-     itself forward and altitude takes over). */
+     itself forward and altitude takes over). The 🏃 emoji faces left by
+     default in most fonts; flip it horizontally so the runner faces the
+     scrolling direction (right). */
   #touch-run {
     bottom: max(24px, env(safe-area-inset-bottom, 24px));
     left:   max(24px, env(safe-area-inset-left,   24px));
   }
+  #touch-run { transform: scaleX(-1); }
+  #touch-run.pressed { transform: scaleX(-1) scale(0.92); }
   body.in-airplane #touch-run { display: none; }
 
   /* JUMP on bottom-right. Uses a warm accent color so it stands out as
@@ -1532,18 +1536,26 @@ function buildCharacter(which) {
   nose.position.set(faceF + 0.05, -0.02, 0);
   headGroup.add(nose);
 
-  // Mouth — bead curve reads as a smile from every angle
-  const mouthMat = mat(0x8a2a2a, { rough: 0.55 });
-  const mouthBeadGeo = new THREE.SphereGeometry(0.026, 12, 10);
-  const N = 7;
-  for (let i = 0; i < N; i++) {
-    const t = (i / (N - 1)) * 2 - 1; // -1..1 across the mouth
-    const zz = t * 0.11;
-    const yy = -0.16 + t * t * 0.04; // upward-curving smile
-    const bead = new THREE.Mesh(mouthBeadGeo, mouthMat);
-    bead.position.set(faceF + 0.005, yy, zz);
-    headGroup.add(bead);
-  }
+  // Mouth — clean smile arc (half-torus) in a warm red. Oriented so the
+  // ring lies in the face plane and the arc opens upward into a ∪ shape.
+  const mouthMat = mat(0xc83344, { rough: 0.45, emissive: 0x661020, emissiveIntensity: 0.15 });
+  const mouth = new THREE.Mesh(
+    new THREE.TorusGeometry(0.095, 0.024, 12, 22, Math.PI),
+    mouthMat
+  );
+  mouth.position.set(faceF + 0.005, -0.12, 0);
+  mouth.rotation.y = Math.PI / 2;   // put the ring in the Y-Z face plane
+  mouth.rotation.z = Math.PI;       // flip the arc so it opens upward (smile)
+  headGroup.add(mouth);
+  // Little fill behind the smile — a soft flat ellipse so the mouth reads
+  // as a real opening rather than a floating line
+  const mouthFill = new THREE.Mesh(
+    new THREE.SphereGeometry(0.06, 16, 10),
+    mat(0x4a1018, { rough: 0.6 })
+  );
+  mouthFill.scale.set(0.35, 0.4, 1.4);
+  mouthFill.position.set(faceF - 0.005, -0.15, 0);
+  headGroup.add(mouthFill);
 
   // Cheeks (both have them now — rosy)
   for (const sz of [-1, 1]) {
@@ -4771,10 +4783,6 @@ function startLevel(idx) {
 
   const charGroup = buildCharacter(chosenChar);
   charGroup.position.set(2, 0, 0);
-  // Face is built along +X (screen-right = scrolling direction). Tilt the
-  // character slightly toward the camera (negative Y rotation) so the face
-  // is visible in a ¾ angle while still clearly pointing right.
-  charGroup.rotation.y = -0.35;
   scene.add(charGroup);
 
   // Ground shadow blob — tracks player X/Z, shrinks as player jumps higher
