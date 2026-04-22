@@ -360,21 +360,14 @@
 
   /* -------- Touch controls (phones/tablets only) -------- */
   #touch-controls { display: none; }
-  #touch-jumpzone {
-    position: absolute; inset: 0;
-    pointer-events: auto;
-    background: transparent;
-    -webkit-tap-highlight-color: transparent;
-  }
   .touch-btn {
     position: absolute;
-    bottom: max(24px, env(safe-area-inset-bottom, 24px));
-    width: 88px; height: 88px;
-    background: rgba(255,255,255,0.18);
+    width: 82px; height: 82px;
+    background: rgba(255,255,255,0.2);
     border: 3px solid rgba(255,255,255,0.6);
     border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
-    font-size: 42px; color: rgba(255,255,255,0.95);
+    font-size: 38px; color: rgba(255,255,255,0.95);
     pointer-events: auto;
     user-select: none; -webkit-user-select: none;
     touch-action: none;
@@ -385,23 +378,39 @@
     background: rgba(255,204,0,0.55);
     transform: scale(0.92);
   }
-  #touch-left  { left: max(20px, env(safe-area-inset-left, 20px)); }
-  #touch-right { left: calc(max(20px, env(safe-area-inset-left, 20px)) + 108px); }
+  /* Big action buttons (run + jump) */
+  .touch-big { width: 100px; height: 100px; font-size: 44px; }
 
-  /* Altitude buttons — right side, stacked vertically. Only visible when
-     the airplane power-up is active (body.in-airplane). */
+  /* RUN on bottom-left, hidden when piloting the airplane (the plane flies
+     itself forward and altitude takes over). */
+  #touch-run {
+    bottom: max(24px, env(safe-area-inset-bottom, 24px));
+    left:   max(24px, env(safe-area-inset-left,   24px));
+  }
+  body.in-airplane #touch-run { display: none; }
+
+  /* JUMP on bottom-right. Uses a warm accent color so it stands out as
+     the main action button. */
+  #touch-jump {
+    bottom: max(24px, env(safe-area-inset-bottom, 24px));
+    right:  max(24px, env(safe-area-inset-right,  24px));
+    background: rgba(255,120,80,0.45);
+    border-color: rgba(255,170,80,0.85);
+  }
+  #touch-jump.pressed { background: rgba(255,180,60,0.75); }
+
+  /* Up / Down stacked on the LEFT side, only visible while in the airplane
+     so they replace the run button during flight. */
   #touch-up, #touch-down { display: none; }
   body.in-airplane #touch-up,
   body.in-airplane #touch-down { display: flex; }
   #touch-down {
-    right: max(20px, env(safe-area-inset-right, 20px));
     bottom: max(24px, env(safe-area-inset-bottom, 24px));
-    left: auto;
+    left:   max(24px, env(safe-area-inset-left, 24px));
   }
   #touch-up {
-    right: max(20px, env(safe-area-inset-right, 20px));
-    bottom: calc(max(24px, env(safe-area-inset-bottom, 24px)) + 102px);
-    left: auto;
+    bottom: calc(max(24px, env(safe-area-inset-bottom, 24px)) + 96px);
+    left:   max(24px, env(safe-area-inset-left, 24px));
   }
 
   @media (pointer: coarse) and (hover: none) {
@@ -480,11 +489,10 @@
 
 <!-- Touch controls (phones/tablets only; hidden on desktop via media query) -->
 <div id="touch-controls">
-  <div id="touch-jumpzone"></div>
-  <div class="touch-btn" id="touch-left">◀</div>
-  <div class="touch-btn" id="touch-right">▶</div>
-  <div class="touch-btn" id="touch-up">▲</div>
-  <div class="touch-btn" id="touch-down">▼</div>
+  <div class="touch-btn touch-big" id="touch-run" aria-label="Run">🏃</div>
+  <div class="touch-btn touch-big" id="touch-jump" aria-label="Jump">↑</div>
+  <div class="touch-btn" id="touch-up" aria-label="Up">▲</div>
+  <div class="touch-btn" id="touch-down" aria-label="Down">▼</div>
 </div>
 
 <!-- Rotate-to-landscape hint (touch + portrait only) -->
@@ -1166,10 +1174,11 @@ window.addEventListener("keyup", (e) => { keys[e.code] = false; keys[e.key] = fa
 
 // ---------- Touch controls ----------
 (function setupTouch() {
-  const left = document.getElementById("touch-left");
-  const right = document.getElementById("touch-right");
-  const jumpZone = document.getElementById("touch-jumpzone");
-  if (!left || !right || !jumpZone) return;
+  const runBtn  = document.getElementById("touch-run");
+  const jumpBtn = document.getElementById("touch-jump");
+  const upBtn   = document.getElementById("touch-up");
+  const downBtn = document.getElementById("touch-down");
+  if (!runBtn || !jumpBtn) return;
 
   const bindHold = (el, keyCode) => {
     const press = (e) => {
@@ -1190,18 +1199,30 @@ window.addEventListener("keyup", (e) => { keys[e.code] = false; keys[e.key] = fa
     el.addEventListener("mouseup", release);
     el.addEventListener("mouseleave", release);
   };
-  bindHold(left, "ArrowLeft");
-  bindHold(right, "ArrowRight");
-  const up = document.getElementById("touch-up");
-  const down = document.getElementById("touch-down");
-  if (up) bindHold(up, "ArrowUp");
-  if (down) bindHold(down, "ArrowDown");
+  // RUN — hold to sprint forward (maps to ArrowRight so the existing
+  // movement code picks it up the same as a keyboard key).
+  bindHold(runBtn, "ArrowRight");
+  // Altitude controls for the airplane power-up
+  if (upBtn)   bindHold(upBtn,   "ArrowUp");
+  if (downBtn) bindHold(downBtn, "ArrowDown");
 
-  jumpZone.addEventListener("touchstart", (e) => {
+  // JUMP — one-shot action on touch down
+  const pressJump = (e) => {
     e.preventDefault();
     Audio._ensure();
+    jumpBtn.classList.add("pressed");
     if (gameState === "playing") tryJump();
-  }, { passive: false });
+  };
+  const releaseJump = (e) => {
+    if (e) e.preventDefault();
+    jumpBtn.classList.remove("pressed");
+  };
+  jumpBtn.addEventListener("touchstart", pressJump, { passive: false });
+  jumpBtn.addEventListener("touchend",   releaseJump, { passive: false });
+  jumpBtn.addEventListener("touchcancel", releaseJump, { passive: false });
+  jumpBtn.addEventListener("mousedown", pressJump);
+  jumpBtn.addEventListener("mouseup",   releaseJump);
+  jumpBtn.addEventListener("mouseleave", releaseJump);
 
   // Prevent double-tap zoom on iOS during gameplay
   document.addEventListener("gesturestart", (e) => e.preventDefault());
